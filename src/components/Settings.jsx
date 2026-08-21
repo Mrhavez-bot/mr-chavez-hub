@@ -8,7 +8,10 @@ export default function Settings() {
   const [appName, setAppName] = useState(config?.app_name || "");
   const [headerMessage, setHeaderMessage] = useState(config?.header_message || "");
   const [currencyName, setCurrencyName] = useState(config?.currency_name || "");
+  const [welcomeVideoUrl, setWelcomeVideoUrl] = useState(config?.welcome_video_url || "");
+  const [spotifyUrl, setSpotifyUrl] = useState(config?.spotify_playlist_url || "");
   const [msg, setMsg] = useState(null);
+  const [msg2, setMsg2] = useState(null);
 
   async function save() {
     if (!appName.trim() || !headerMessage.trim() || !currencyName.trim()) {
@@ -32,6 +35,11 @@ export default function Settings() {
     reader.readAsDataURL(f);
   }
   async function removeLogo() { await configApi.update({ logo_url: null }); reload(); }
+  async function saveStudentDashboard() {
+    await configApi.update({ welcome_video_url: welcomeVideoUrl.trim() || null, spotify_playlist_url: spotifyUrl.trim() || null });
+    setMsg2({ type: "ok", text: "Guardado." });
+    reload();
+  }
 
   return (
     <div>
@@ -54,6 +62,16 @@ export default function Settings() {
         {config?.logo_url ? <div className="logo" style={{ width: 64, height: 64, marginBottom: 10 }}><img src={config.logo_url} alt="" /></div> : <div className="muted" style={{ marginBottom: 10 }}>No logo uploaded — using default icon.</div>}
         <input type="file" accept="image/*" onChange={uploadLogo} />
         {config?.logo_url && <button className="danger" style={{ marginLeft: 8 }} onClick={removeLogo}>Remove logo</button>}
+      </div>
+      <div className="card" style={{ marginTop: 14 }}>
+        <b>Dashboard del alumno</b>
+        <label className="flabel" style={{ marginTop: 10 }}>Video de bienvenida (link de YouTube, Vimeo, o .mp4 directo)</label>
+        <input value={welcomeVideoUrl} onChange={(e) => setWelcomeVideoUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." />
+        <label className="flabel" style={{ marginTop: 10 }}>Playlist de Spotify (pega el link para compartir de la playlist)</label>
+        <input value={spotifyUrl} onChange={(e) => setSpotifyUrl(e.target.value)} placeholder="https://open.spotify.com/playlist/..." />
+        <div style={{ marginTop: 14 }}><button className="primary" onClick={saveStudentDashboard}>Guardar</button></div>
+        {msg2 && <div className={"banner " + msg2.type}>{msg2.text}</div>}
+        <div className="small" style={{ marginTop: 8 }}>El video de bienvenida solo se le muestra a cada alumno la primera vez que entra a su cuenta.</div>
       </div>
       <div className="card" style={{ marginTop: 14 }}><b>Groups</b><div className="muted" style={{ marginTop: 6 }}>Fixed groups: {GROUPS.join(", ")}</div></div>
       <div className="card" style={{ marginTop: 14 }}><b>Periods</b><div className="muted" style={{ marginTop: 6 }}>{PERIODS.join(", ")}</div></div>
