@@ -1,6 +1,7 @@
 import { useData } from "../context/DataContext";
 import { GROUPS, PERIODS } from "../lib/constants";
 import { computeGrade, fmtPct } from "../lib/calc";
+import SpotifyPlayer from "./SpotifyPlayer";
 
 export default function Dashboard({ ui, setUi }) {
   const data = useData();
@@ -23,6 +24,7 @@ export default function Dashboard({ ui, setUi }) {
   return (
     <div>
       <h2>Dashboard</h2>
+      <SpotifyPlayer url={data.config?.spotify_playlist_url} />
       <div className="row">
         <select value={group} onChange={(e) => setUi({ ...ui, group: e.target.value })}>
           {GROUPS.map((g) => <option key={g} value={g}>{g}</option>)}
