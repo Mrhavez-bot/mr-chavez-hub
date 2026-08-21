@@ -4,15 +4,21 @@ import { useData } from "../context/DataContext";
 import { rewardsApi } from "../lib/api";
 import { PERIODS, SKILLS } from "../lib/constants";
 import { computeGrade, fmtPct, medalIcon, medalLabel, attendanceStats, taskPct, scoresDetail, scoresPct, projectForGroupPeriod, projectPct } from "../lib/calc";
+import SpotifyPlayer from "./SpotifyPlayer";
+import WelcomeVideoModal from "./WelcomeVideoModal";
+import Announcements from "./Announcements";
+import Surveys from "./Surveys";
 
 const TABS = [
   ["sdashboard", "🏠 My Dashboard"],
+  ["sannouncements", "📢 Announcements"],
   ["sshop", "🎁 Reward Shop"],
   ["sattendance", "📅 My Attendance"],
   ["stasks", "✓ My Tasks"],
   ["sscores", "📝 My Scores"],
   ["sproject", "📁 My Project"],
-  ["sgrades", "🎯 My Grades"]
+  ["sgrades", "🎯 My Grades"],
+  ["ssurveys", "🗳 Surveys"]
 ];
 
 function PeriodPicker({ period, setPeriod }) {
@@ -35,6 +41,7 @@ export default function StudentPortal({ ui, setUi }) {
 
   const me = students.find((s) => s.id === profile.student_id);
   const currency = config?.currency_name || "Celtix";
+  const [showWelcome, setShowWelcome] = useState(me && !me.welcome_seen && !!config?.welcome_video_url);
 
   if (!me) return <div className="empty"><h3>Your student record could not be found.</h3></div>;
 
@@ -54,12 +61,16 @@ export default function StudentPortal({ ui, setUi }) {
 
   return (
     <div>
+      {showWelcome && <WelcomeVideoModal videoUrl={config.welcome_video_url} onClose={() => setShowWelcome(false)} />}
+      <SpotifyPlayer url={config?.spotify_playlist_url} />
       <nav className="nav">
         {TABS.map(([key, label]) => (
           <button key={key} className={tab === key ? "active" : ""} onClick={() => setTab(key)}>{label}</button>
         ))}
       </nav>
       <main>
+        {tab === "sannouncements" && <Announcements mode="student" myGroup={me.group_name} />}
+        {tab === "ssurveys" && <Surveys mode="student" myStudentId={me.id} myGroup={me.group_name} />}
         {tab === "sdashboard" && (
           <div>
             <h2>My Dashboard</h2>
