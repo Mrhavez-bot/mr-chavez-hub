@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import {
   configApi, studentsApi, rewardsApi, transactionsApi,
-  attendanceApi, tasksApi, scoresApi, projectsApi
+  attendanceApi, tasksApi, scoresApi, projectsApi,
+  announcementsApi, surveysApi
 } from "../lib/api";
 import { useAuth } from "./AuthContext";
 
@@ -10,7 +11,8 @@ const DataContext = createContext(null);
 const EMPTY = {
   config: null, students: [], rewards: [], purchases: [], transactions: [],
   attendance: [], tasks: [], taskResults: [], scores: [],
-  projects: [], criteria: [], projectResults: []
+  projects: [], criteria: [], projectResults: [],
+  announcements: [], surveys: [], surveyVotes: []
 };
 
 export function DataProvider({ children }) {
@@ -23,15 +25,18 @@ export function DataProvider({ children }) {
     setLoading(true);
     const [
       config, students, rewards, purchases, transactions,
-      attendance, tasks, taskResults, scores, projects, criteria, projectResults
+      attendance, tasks, taskResults, scores, projects, criteria, projectResults,
+      announcements, surveys, surveyVotes
     ] = await Promise.all([
       configApi.get(), studentsApi.list(), rewardsApi.list(), rewardsApi.purchases(), transactionsApi.list(),
       attendanceApi.list(), tasksApi.list(), tasksApi.results(), scoresApi.list(),
-      projectsApi.list(), projectsApi.criteria(), projectsApi.results()
+      projectsApi.list(), projectsApi.criteria(), projectsApi.results(),
+      announcementsApi.list(), surveysApi.list(), surveysApi.votes()
     ]);
     setData({
       config, students, rewards, purchases, transactions,
-      attendance, tasks, taskResults, scores, projects, criteria, projectResults
+      attendance, tasks, taskResults, scores, projects, criteria, projectResults,
+      announcements, surveys, surveyVotes
     });
     setLoading(false);
   }, [session]);
