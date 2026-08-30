@@ -8,6 +8,7 @@ import Students from "./components/Students";
 import Attendance from "./components/Attendance";
 import Tasks from "./components/Tasks";
 import Scores from "./components/Scores";
+import LanguagePortfolio from "./components/LanguagePortfolio";
 import Project from "./components/Project";
 import Grades from "./components/Grades";
 import Shop from "./components/Shop";
@@ -23,6 +24,7 @@ const TEACHER_TABS = [
   ["attendance", "📅 Attendance", Attendance],
   ["tasks", "✓ Tasks", Tasks],
   ["scores", "📝 Scores", Scores],
+  ["languageportfolio", "📚 Language Portfolio", LanguagePortfolio],
   ["project", "📁 Project", Project],
   ["grades", "🎯 Grades", Grades],
   ["shop", "🎁 Reward Shop", Shop],
