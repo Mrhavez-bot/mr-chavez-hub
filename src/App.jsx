@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useAuth } from "./context/AuthContext";
 import { DataProvider, useData } from "./context/DataContext";
 import Auth from "./components/Auth";
@@ -97,7 +97,14 @@ function Shell() {
 export default function App() {
   const { session, loading } = useAuth();
 
-  if (loading) return <div className="app"><div className="spin">Loading…</div></div>;
+  // El spinner a pantalla completa solo se muestra en el arranque.
+  // Después, un parpadeo de `loading` ya no desmonta la app ni borra lo capturado.
+  const booted = useRef(false);
+  if (!loading) booted.current = true;
+
+  if (loading && !booted.current) {
+    return <div className="app"><div className="spin">Loading…</div></div>;
+  }
   if (!session) return <div className="app"><Auth /></div>;
 
   return (
