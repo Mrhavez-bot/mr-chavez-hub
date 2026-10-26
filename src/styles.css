@@ -74,3 +74,13 @@ label.flabel{font-size:12px;color:#a5a3d1;display:block;margin-bottom:4px}
 .spin{text-align:center;padding:60px;color:#a5a3d1}
 @media print{.nav,.roleBadge{display:none!important}body{background:#fff;color:#000}.app{background:#fff}.card,.stat,.formula,table{background:#fff!important;color:#000!important;border-color:#ccc!important}th{color:#333!important}}
 @media(max-width:650px){.app{margin:0;border-radius:0;min-height:100vh;padding:14px}.att{align-items:flex-start;flex-direction:column}}
+textarea{background:#242456;border:1px solid #2e2e68;color:#fff;border-radius:10px;padding:10px 12px;width:100%;min-height:64px;font:inherit;resize:vertical}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:10px}
+.fgrid label.flabel,.card label.flabel{margin-top:6px}
+.calGrid{display:grid;grid-template-columns:110px repeat(5,1fr);gap:6px;align-items:center;margin-bottom:6px}
+.calGrid button{padding:8px 4px;border-radius:8px;cursor:pointer;font-size:12px;background:transparent;border:1px solid #2e2e68;color:#a5a3d1}
+.calGrid button.on{background:#2dd4bf;color:#053a2e;border-color:#2dd4bf}
+.calGrid button:disabled{opacity:.25;cursor:not-allowed}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
+.chips button{padding:6px 10px;border-radius:20px;cursor:pointer;font-size:12px;background:transparent;border:1px solid #2e2e68;color:#a5a3d1}
+.chips button.on{background:#ffc145;color:#432b00;border-color:#ffc145}
