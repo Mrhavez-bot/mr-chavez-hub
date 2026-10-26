@@ -6,6 +6,13 @@ import {
 } from "../lib/planners/plannerData";
 import { saveDraft, loadDraft, clearDraft } from "../lib/draftStorage";
 import PlannerPOP from "./PlannerPOP";
+import ClaudeBar from "./ClaudeBar";
+import SoiReview from "./SoiReview";
+import { askClaude } from "../lib/planners/claude";
+import {
+  chunk, pendingDays, soiPayload, unit10Payload, sessions10Payload,
+  applyUnit10, applySessions10, SESSION_FIELDS_10
+} from "../lib/planners/claudeData";
 
 const EMPTY_DAY = { topic: "", objective: "", opening: "", ts: "", le: "", closing: "" };
 
@@ -66,6 +73,35 @@ function Planner10() {
   dates.forEach((d) => { const m = mondayOf(d); (byWeek[m] = byWeek[m] || []).push(d); });
   let sessionNo = 0;
 
+  const claudeActions = [
+    {
+      key: "unit", label: "✨ Completar la unidad",
+      run: async (ow) => {
+        if (!plan.unitTitle.trim()) throw new Error("Escribe primero el título de la unidad.");
+        const r = await askClaude("unit10", unit10Payload(plan));
+        setPlan((p) => applyUnit10(p, r, ow));
+        return "Listo. Revisa y ajusta lo que Claude escribió.";
+      }
+    },
+    {
+      key: "sessions", label: "✨ Escribir las sesiones",
+      run: async (ow, progress) => {
+        if (!dates.length) throw new Error("Selecciona primero los días de clase en el calendario.");
+        const todo = pendingDays(plan, SESSION_FIELDS_10, ow);
+        if (!todo.length) return "Todas las sesiones ya tienen texto. Marca «Reemplazar…» para generarlas de nuevo.";
+        const groups = chunk(todo, 6);
+        const done = [];
+        for (let i = 0; i < groups.length; i++) {
+          progress(`Escribiendo sesiones ${i * 6 + 1} a ${Math.min((i + 1) * 6, todo.length)} de ${todo.length}…`);
+          const r = await askClaude("sessions10", sessions10Payload(plan, groups[i], done));
+          setPlan((p) => applySessions10(p, r, ow));
+          (r.sessions || []).forEach((x) => done.push({ date: x.date, objective: x.objective }));
+        }
+        return `Listo: ${todo.length} sesiones escritas. Revísalas y ajústalas.`;
+      }
+    }
+  ];
+
   async function download() {
     setBusy(true); setMsg(null);
     try {
@@ -94,6 +130,7 @@ function Planner10() {
         <span className="small">Tu avance se guarda solo en este navegador.</span>
       </div>
       {msg && <div className={"banner " + msg.type}>{msg.text}</div>}
+      <ClaudeBar actions={claudeActions} />
 
       <div className="card" style={{ marginBottom: 12 }}>
         <b>1. Datos de la unidad</b>
@@ -157,6 +194,7 @@ function Planner10() {
       <div className="card" style={{ marginBottom: 12 }}>
         <b>4. Statement of inquiry y preguntas</b>
         {T("soi", "Statement of inquiry", 3)}
+        <SoiReview getPayload={() => soiPayload(plan)} onUse={(t) => set("soi", t)} />
         {T("iqFactual", "Inquiry question: Factual")}
         {T("iqConceptual", "Inquiry question: Conceptual")}
         {T("iqDebatable", "Inquiry question: Debatable")}
