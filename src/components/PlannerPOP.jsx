@@ -5,6 +5,9 @@ import {
   LEARNER_ATTRS, ATL_GROUPS, COMP_GEN, COMP_DISC, WEEK_FIELDS
 } from "../lib/planners/plannerData";
 import { saveDraft, loadDraft, clearDraft } from "../lib/draftStorage";
+import ClaudeBar from "./ClaudeBar";
+import { askClaude } from "../lib/planners/claude";
+import { chunk, pendingDays, popPayload, applyWeeksPOP, applySessionsPOP, SESSION_FIELDS_POP } from "../lib/planners/claudeData";
 
 const EMPTY_DAY = { topic: "", name: "", objective: "", dev: "" };
 
@@ -59,6 +62,36 @@ export default function PlannerPOP({ grade }) {
   dates.forEach((d) => { const m = mondayOf(d); (byWeek[m] = byWeek[m] || []).push(d); });
   let sessionNo = 0;
 
+  const claudeActions = [
+    {
+      key: "weeks", label: "✨ Completar semanas y vínculos",
+      run: async (ow) => {
+        if (!plan.unitTitle.trim()) throw new Error("Escribe primero el título de la unidad.");
+        if (!dates.length) throw new Error("Selecciona primero los días de clase en el calendario.");
+        const r = await askClaude("weeksPOP", popPayload(plan, dates));
+        setPlan((p) => applyWeeksPOP(p, r, ow));
+        return "Listo. Revisa y ajusta lo que Claude escribió.";
+      }
+    },
+    {
+      key: "sessions", label: "✨ Escribir las sesiones",
+      run: async (ow, progress) => {
+        if (!dates.length) throw new Error("Selecciona primero los días de clase en el calendario.");
+        const todo = pendingDays(plan, SESSION_FIELDS_POP, ow);
+        if (!todo.length) return "Todas las sesiones ya tienen texto. Marca «Reemplazar…» para generarlas de nuevo.";
+        const groups = chunk(todo, 6);
+        const done = [];
+        for (let i = 0; i < groups.length; i++) {
+          progress(`Escribiendo sesiones ${i * 6 + 1} a ${Math.min((i + 1) * 6, todo.length)} de ${todo.length}…`);
+          const r = await askClaude("sessionsPOP", popPayload(plan, groups[i], done));
+          setPlan((p) => applySessionsPOP(p, r, ow));
+          (r.sessions || []).forEach((x) => done.push({ date: x.date, objective: x.objective }));
+        }
+        return `Listo: ${todo.length} sesiones escritas. Revísalas y ajústalas.`;
+      }
+    }
+  ];
+
   async function download() {
     setBusy(true); setMsg(null);
     try {
@@ -87,6 +120,7 @@ export default function PlannerPOP({ grade }) {
         <span className="small">Tu avance se guarda solo en este navegador.</span>
       </div>
       {msg && <div className={"banner " + msg.type}>{msg.text}</div>}
+      <ClaudeBar actions={claudeActions} />
 
       <div className="card" style={{ marginBottom: 12 }}>
         <b>1. Datos de la unidad</b>
