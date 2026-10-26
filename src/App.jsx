@@ -13,6 +13,7 @@ import Project from "./components/Project";
 import Grades from "./components/Grades";
 import Shop from "./components/Shop";
 import Reports from "./components/Reports";
+import Planners from "./components/Planners";
 import Settings from "./components/Settings";
 import Announcements from "./components/Announcements";
 import Surveys from "./components/Surveys";
@@ -30,6 +31,7 @@ const TEACHER_TABS = [
   ["shop", "🎁 Reward Shop", Shop],
   ["announcements", "📢 Announcements", Announcements],
   ["surveys", "🗳 Surveys", Surveys],
+  ["planners", "🗓 Planners", Planners],
   ["reports", "📄 Reports", Reports],
   ["settings", "⚙ Settings", Settings]
 ];
