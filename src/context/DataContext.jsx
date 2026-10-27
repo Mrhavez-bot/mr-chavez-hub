@@ -11,7 +11,7 @@ const DataContext = createContext(null);
 const EMPTY = {
   config: null, students: [], rewards: [], purchases: [], transactions: [],
   attendance: [], tasks: [], taskResults: [], scores: [],
-  projects: [], criteria: [], projectResults: [],
+  projects: [], criteria: [], projectResults: [], projectTeams: [], projectTeamMembers: [], projectTeamResults: [],
   announcements: [], surveys: [], surveyVotes: [], languagePortfolio: []
 };
 
@@ -30,16 +30,19 @@ export function DataProvider({ children }) {
     const [
       config, students, rewards, purchases, transactions,
       attendance, tasks, taskResults, scores, projects, criteria, projectResults,
+      projectTeams, projectTeamMembers, projectTeamResults,
       announcements, surveys, surveyVotes, languagePortfolio
     ] = await Promise.all([
       configApi.get(), studentsApi.list(), rewardsApi.list(), rewardsApi.purchases(), transactionsApi.list(),
       attendanceApi.list(), tasksApi.list(), tasksApi.results(), scoresApi.list(),
       projectsApi.list(), projectsApi.criteria(), projectsApi.results(),
+      projectsApi.teams(), projectsApi.teamMembers(), projectsApi.teamResults(),
       announcementsApi.list(), surveysApi.list(), surveysApi.votes(), languagePortfolioApi.list()
     ]);
     setData({
       config, students, rewards, purchases, transactions,
       attendance, tasks, taskResults, scores, projects, criteria, projectResults,
+      projectTeams, projectTeamMembers, projectTeamResults,
       announcements, surveys, surveyVotes, languagePortfolio
     });
     setLoading(false);
@@ -61,8 +64,11 @@ export function DataProvider({ children }) {
     setData((d) => ({ ...d, scores }));
   }, []);
   const refreshProjects = useCallback(async () => {
-    const [projects, criteria, projectResults] = await Promise.all([projectsApi.list(), projectsApi.criteria(), projectsApi.results()]);
-    setData((d) => ({ ...d, projects, criteria, projectResults }));
+    const [projects, criteria, projectResults, projectTeams, projectTeamMembers, projectTeamResults] = await Promise.all([
+      projectsApi.list(), projectsApi.criteria(), projectsApi.results(),
+      projectsApi.teams(), projectsApi.teamMembers(), projectsApi.teamResults()
+    ]);
+    setData((d) => ({ ...d, projects, criteria, projectResults, projectTeams, projectTeamMembers, projectTeamResults }));
   }, []);
   const refreshStudents = useCallback(async () => {
     const students = await studentsApi.list();
