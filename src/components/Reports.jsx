@@ -77,7 +77,7 @@ export default function Reports() {
       const att = attendanceStats(data.attendance, s.id, group, period);
       const tsk = taskPct(data.tasks, data.taskResults, s.id, group, period);
       const scr = scoresPct(data.scores, s.id, group, period);
-      const proj = projectPct(data.projects, data.criteria, data.projectResults, s.id, group, period);
+      const proj = projectPct(data.projects, data.criteria, data.projectResults, s.id, group, period, { teamMembers: data.projectTeamMembers, teamResults: data.projectTeamResults });
       const gr = computeGrade(data, s.id, group, period);
       if (gr.medal) medalCounts[gr.medal]++;
       return { s, att, tsk, scr, proj, gr };
@@ -116,7 +116,7 @@ export default function Reports() {
     const tsk = taskPct(data.tasks, data.taskResults, s.id, g, period);
     const map = scoresDetail(data.scores, s.id, g, period);
     const scr = scoresPct(data.scores, s.id, g, period);
-    const proj = projectPct(data.projects, data.criteria, data.projectResults, s.id, g, period);
+    const proj = projectPct(data.projects, data.criteria, data.projectResults, s.id, g, period, { teamMembers: data.projectTeamMembers, teamResults: data.projectTeamResults });
     const gr = computeGrade(data, s.id, g, period);
     const groupTasks = data.tasks.filter((t) => t.group_name === g && t.period === period);
     const taskRows = groupTasks.map((t) => {
