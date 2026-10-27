@@ -193,19 +193,26 @@ export default function StudentPortal({ ui, setUi }) {
         {tab === "sproject" && (() => {
           const proj = projectForGroupPeriod(data.projects, me.group_name, period);
           if (!proj) return <div><h2>My Project</h2><PeriodPicker period={period} setPeriod={setPeriod} /><div className="empty"><h3>No project assigned for {period}</h3></div></div>;
-          const pp = projectPct(data.projects, data.criteria, data.projectResults, me.id, me.group_name, period);
+          const pp = projectPct(data.projects, data.criteria, data.projectResults, me.id, me.group_name, period, { teamMembers: data.projectTeamMembers, teamResults: data.projectTeamResults });
           const projCriteria = data.criteria.filter((c) => c.project_id === proj.id);
+          const isTeam = proj.mode === "team";
+          const mem = isTeam ? data.projectTeamMembers.find((m) => m.project_id === proj.id && m.student_id === me.id) : null;
+          const team = mem ? data.projectTeams.find((t) => t.id === mem.team_id) : null;
+          const resultOf = (c) => (isTeam
+            ? (mem ? data.projectTeamResults.find((x) => x.team_id === mem.team_id && x.criterion_id === c.id) : null)
+            : data.projectResults.find((x) => x.project_id === proj.id && x.student_id === me.id && x.criterion_id === c.id));
           return (
             <div>
               <h2>My Project</h2>
               <PeriodPicker period={period} setPeriod={setPeriod} />
               <div className="name" style={{ fontSize: 18 }}>{proj.name}</div>
+              {isTeam && <div className="muted">{team ? `Team: ${team.name}` : "Todavía no tienes equipo asignado."}</div>}
               <div className="stats" style={{ marginTop: 10 }}><div className="stat"><b>{pp.value == null ? "Missing" : pp.value + "%"}</b><span>Final Score</span></div></div>
               <table><tbody>
                 <tr><th>Criterion</th><th>Score</th></tr>
                 {projCriteria.map((c) => {
-                  const r = data.projectResults.find((x) => x.project_id === proj.id && x.student_id === me.id && x.criterion_id === c.id);
-                  return <tr key={c.id}><td>{c.name}</td><td>{r ? r.value + " / 5" : <span className="muted">Not graded</span>}</td></tr>;
+                  const r = resultOf(c);
+                  return <tr key={c.id}><td>{c.name}</td><td>{r ? Number(r.value) + " / " + Number(c.max_points ?? 5) : <span className="muted">Not graded</span>}</td></tr>;
                 })}
               </tbody></table>
             </div>
