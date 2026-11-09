@@ -1,5 +1,5 @@
 import { useData } from "../context/DataContext";
-import { computeGrade, fmtPct, medalIcon, medalLabel, medalPillClass, projectForGroupPeriod, gradeWeights } from "../lib/calc";
+import { computeGrade, fmtPct, medalIcon, medalLabel, medalPillClass, projectForGroupPeriod, resolveWeights, weightsText } from "../lib/calc";
 import GroupPeriodPicker from "./GroupPeriodPicker";
 
 export default function Grades({ ui, setUi }) {
@@ -9,12 +9,10 @@ export default function Grades({ ui, setUi }) {
   const list = students.filter((s) => s.group_name === g);
   const proj = projectForGroupPeriod(projects, g, p);
   const hasProject = !!proj;
-  const w = gradeWeights(data.config, hasProject);
-  const pct = (n) => Math.round(n * 100);
-  const formulaText = hasProject
-    ? `Period ${p} — Project Included: Attendance ${pct(w.att)}% · Tasks ${pct(w.tsk)}% · Exam ${pct(w.scr)}%${w.lp > 0 ? ` · Language Portfolio ${pct(w.lp)}%` : ""} · Project ${pct(w.proj)}%`
-    : `Period ${p} — No Project: Attendance ${pct(w.att)}% · Tasks ${pct(w.tsk)}% · Exam ${pct(w.scr)}%${w.lp > 0 ? ` · Language Portfolio ${pct(w.lp)}%` : ""}`;
+  const w = resolveWeights(data, g, p, hasProject);
+  const formulaText = `${p} — ${hasProject ? "Project Included" : "No Project"}: ` + weightsText({ weights: w, hasProject, extras: w.extraList.map((c) => ({ name: c.name, weight: w.extras[c.id] || 0 })) });
   const showLP = w.lp > 0;
+  const extraCols = w.extraList.filter((c) => (w.extras[c.id] || 0) > 0);
 
   return (
     <div>
@@ -27,7 +25,7 @@ export default function Grades({ ui, setUi }) {
         <>
           <table>
             <tbody>
-              <tr><th>Student</th><th>Attendance</th><th>Tasks</th><th>Exam</th>{showLP && <th>Language Portfolio</th>}<th>Project</th><th>Final Grade</th><th>Medal</th></tr>
+              <tr><th>Student</th><th>Attendance</th><th>Tasks</th><th>Exam</th>{showLP && <th>Language Portfolio</th>}{extraCols.map((c) => <th key={c.id}>{c.name}</th>)}<th>Project</th><th>Final Grade</th><th>Medal</th></tr>
               {list.map((s) => {
                 const gr = computeGrade(data, s.id, g, p);
                 return (
@@ -37,6 +35,7 @@ export default function Grades({ ui, setUi }) {
                     <td>{fmtPct(gr.tasks)}</td>
                     <td>{fmtPct(gr.scores)}</td>
                     {showLP && <td>{fmtPct(gr.languagePortfolio)}</td>}
+                    {extraCols.map((c) => <td key={c.id}>{fmtPct((gr.extras.find((x) => x.id === c.id) || {}).value)}</td>)}
                     <td>{hasProject ? (gr.project == null ? <span className="muted">Missing</span> : gr.project + "%") : <span className="muted">N/A</span>}</td>
                     <td><b>{gr.final == null ? <span className="pill pillNA" title={"Missing: " + gr.missing.join(", ")}>Incomplete</span> : fmtPct(gr.final)}</b></td>
                     <td>{gr.final == null ? <span className="pill pillNA">N/A</span> : <span className={"pill " + medalPillClass(gr.medal)}>{medalIcon(gr.medal)} {medalLabel(gr.medal)}</span>}</td>

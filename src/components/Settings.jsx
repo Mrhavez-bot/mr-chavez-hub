@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useData } from "../context/DataContext";
 import { configApi } from "../lib/api";
 import { GROUPS, PERIODS } from "../lib/constants";
+import PeriodWeights from "./PeriodWeights";
 
 export default function Settings() {
   const { config, reload } = useData();
@@ -170,6 +171,7 @@ export default function Settings() {
         <div style={{ marginTop: 14 }}><button className="primary" onClick={saveWeights}>Guardar ponderaciones</button></div>
         {msg3 && <div className={"banner " + msg3.type}>{msg3.text}</div>}
       </div>
+      <PeriodWeights />
       <div className="card" style={{ marginTop: 14 }}><b>Groups</b><div className="muted" style={{ marginTop: 6 }}>Fixed groups: {GROUPS.join(", ")}</div></div>
       <div className="card" style={{ marginTop: 14 }}><b>Periods</b><div className="muted" style={{ marginTop: 6 }}>{PERIODS.join(", ")}</div></div>
       <div className="card" style={{ marginTop: 14 }}>

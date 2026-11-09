@@ -3,7 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import { useData } from "../context/DataContext";
 import { rewardsApi } from "../lib/api";
 import { PERIODS, SKILLS } from "../lib/constants";
-import { computeGrade, fmtPct, medalIcon, medalLabel, attendanceStats, taskPct, scoresDetail, scoresPct, projectForGroupPeriod, projectPct, languagePortfolioPct } from "../lib/calc";
+import { computeGrade, weightsText, fmtPct, medalIcon, medalLabel, attendanceStats, taskPct, scoresDetail, scoresPct, projectForGroupPeriod, projectPct, languagePortfolioPct } from "../lib/calc";
 import { bandOf } from "../lib/rubric";
 import SpotifyPlayer from "./SpotifyPlayer";
 import WelcomeVideoModal from "./WelcomeVideoModal";
@@ -225,17 +225,14 @@ export default function StudentPortal({ ui, setUi }) {
           <div>
             <h2>My Grades</h2>
             <PeriodPicker period={period} setPeriod={setPeriod} />
-            <div className="formula">
-              {gr.hasProject
-                ? `Attendance ${Math.round(gr.weights.att * 100)}% · Tasks ${Math.round(gr.weights.tsk * 100)}% · Exam ${Math.round(gr.weights.scr * 100)}%${gr.weights.lp > 0 ? ` · Language Portfolio ${Math.round(gr.weights.lp * 100)}%` : ""} · Project ${Math.round(gr.weights.proj * 100)}%`
-                : `Attendance ${Math.round(gr.weights.att * 100)}% · Tasks ${Math.round(gr.weights.tsk * 100)}% · Exam ${Math.round(gr.weights.scr * 100)}%${gr.weights.lp > 0 ? ` · Language Portfolio ${Math.round(gr.weights.lp * 100)}%` : ""}`}
-            </div>
+            <div className="formula">{weightsText(gr)}</div>
             <table><tbody>
               <tr><th>Component</th><th>Value</th></tr>
               <tr><td>Attendance</td><td>{fmtPct(gr.attendance)}</td></tr>
               <tr><td>Tasks</td><td>{fmtPct(gr.tasks)}</td></tr>
               <tr><td>Exam</td><td>{fmtPct(gr.scores)}</td></tr>
               {gr.weights.lp > 0 && <tr><td>Language Portfolio</td><td>{fmtPct(gr.languagePortfolio)}</td></tr>}
+              {gr.extras.filter((x) => x.weight > 0).map((x) => <tr key={x.id}><td>{x.name}</td><td>{fmtPct(x.value)}</td></tr>)}
               {gr.hasProject && <tr><td>Project</td><td>{gr.project == null ? "Missing" : gr.project + "%"}</td></tr>}
               <tr><td><b>Final Grade</b></td><td><b>{gr.final == null ? "Incomplete — some data missing" : gr.final + "%"}</b></td></tr>
             </tbody></table>

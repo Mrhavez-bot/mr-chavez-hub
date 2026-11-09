@@ -83,17 +83,19 @@ export default function Reports() {
       return { s, att, tsk, scr, proj, gr };
     });
     const showLP = rows.length && rows[0].gr.weights.lp > 0;
+    const extraCols = rows.length ? rows[0].gr.extras.filter((x) => x.weight > 0) : [];
     return (
       <>
         <h3>Complete Group Report — {group} · {period}</h3>
         <table><tbody>
-          <tr><th>Student</th><th>Attendance</th><th>Tasks</th><th>Exam</th>{showLP && <th>Language Portfolio</th>}<th>Project</th><th>Final Grade</th><th>Medal</th></tr>
+          <tr><th>Student</th><th>Attendance</th><th>Tasks</th><th>Exam</th>{showLP && <th>Language Portfolio</th>}{extraCols.map((x) => <th key={x.id}>{x.name}</th>)}<th>Project</th><th>Final Grade</th><th>Medal</th></tr>
           {rows.map(({ s, att, tsk, scr, proj, gr }) => (
             <tr key={s.id}>
               <td>{s.name}</td>
               <td>{att ? `${att.presentPct}% P / ${att.latePct}% L / ${att.absentPct}% A` : "—"}</td>
               <td>{fmtPct(tsk)}</td><td>{fmtPct(scr)}</td>
               {showLP && <td>{fmtPct(gr.languagePortfolio)}</td>}
+              {extraCols.map((x) => <td key={x.id}>{fmtPct((gr.extras.find((y) => y.id === x.id) || {}).value)}</td>)}
               <td>{proj.exists ? (proj.value == null ? "Missing" : proj.value + "%") : "N/A"}</td>
               <td><b>{gr.final == null ? "Incomplete" : gr.final + "%"}</b></td>
               <td>{medalIcon(gr.medal)}</td>
@@ -131,6 +133,7 @@ export default function Reports() {
           <div className="stat"><b>{fmtPct(tsk)}</b><span>Tasks</span></div>
           <div className="stat"><b>{fmtPct(scr)}</b><span>Exam</span></div>
           {gr.weights.lp > 0 && <div className="stat"><b>{fmtPct(gr.languagePortfolio)}</b><span>Language Portfolio</span></div>}
+          {gr.extras.filter((x) => x.weight > 0).map((x) => <div className="stat" key={x.id}><b>{fmtPct(x.value)}</b><span>{x.name}</span></div>)}
           <div className="stat"><b>{proj.exists ? (proj.value == null ? "Missing" : proj.value + "%") : "N/A"}</b><span>Project</span></div>
           <div className="stat"><b>{gr.final == null ? "Incomplete" : gr.final + "%"} {gr.final == null ? "" : medalIcon(gr.medal)}</b><span>Final Grade</span></div>
         </div>
