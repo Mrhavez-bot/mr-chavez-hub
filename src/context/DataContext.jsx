@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import {
   configApi, studentsApi, rewardsApi, transactionsApi,
   attendanceApi, tasksApi, scoresApi, projectsApi,
-  announcementsApi, surveysApi, languagePortfolioApi
+  announcementsApi, surveysApi, languagePortfolioApi, periodWeightsApi, extraApi
 } from "../lib/api";
 import { useAuth } from "./AuthContext";
 
@@ -12,7 +12,8 @@ const EMPTY = {
   config: null, students: [], rewards: [], purchases: [], transactions: [],
   attendance: [], tasks: [], taskResults: [], scores: [],
   projects: [], criteria: [], projectResults: [], projectTeams: [], projectTeamMembers: [], projectTeamResults: [],
-  announcements: [], surveys: [], surveyVotes: [], languagePortfolio: []
+  announcements: [], surveys: [], surveyVotes: [], languagePortfolio: [],
+  periodWeights: [], extraCriteria: [], extraResults: []
 };
 
 export function DataProvider({ children }) {
@@ -34,19 +35,22 @@ export function DataProvider({ children }) {
       config, students, rewards, purchases, transactions,
       attendance, tasks, taskResults, scores, projects, criteria, projectResults,
       projectTeams, projectTeamMembers, projectTeamResults,
-      announcements, surveys, surveyVotes, languagePortfolio
+      announcements, surveys, surveyVotes, languagePortfolio,
+      periodWeights, extraCriteria, extraResults
     ] = await Promise.all([
       configApi.get(), studentsApi.list(), rewardsApi.list(), rewardsApi.purchases(), transactionsApi.list(),
       attendanceApi.list(), tasksApi.list(), tasksApi.results(), scoresApi.list(),
       projectsApi.list(), projectsApi.criteria(), projectsApi.results(),
       projectsApi.teams(), projectsApi.teamMembers(), projectsApi.teamResults(),
-      announcementsApi.list(), surveysApi.list(), surveysApi.votes(), languagePortfolioApi.list()
+      announcementsApi.list(), surveysApi.list(), surveysApi.votes(), languagePortfolioApi.list(),
+      periodWeightsApi.list(), extraApi.criteria(), extraApi.results()
     ]);
     setData({
       config, students, rewards, purchases, transactions,
       attendance, tasks, taskResults, scores, projects, criteria, projectResults,
       projectTeams, projectTeamMembers, projectTeamResults,
-      announcements, surveys, surveyVotes, languagePortfolio
+      announcements, surveys, surveyVotes, languagePortfolio,
+      periodWeights, extraCriteria, extraResults
     });
     } catch (e) {
       setLoadError(e && e.message ? e.message : String(e));
@@ -96,6 +100,14 @@ export function DataProvider({ children }) {
     const [surveys, surveyVotes] = await Promise.all([surveysApi.list(), surveysApi.votes()]);
     setData((d) => ({ ...d, surveys, surveyVotes }));
   }, []);
+  const refreshPeriodWeights = useCallback(async () => {
+    const periodWeights = await periodWeightsApi.list();
+    setData((d) => ({ ...d, periodWeights }));
+  }, []);
+  const refreshExtras = useCallback(async () => {
+    const [extraCriteria, extraResults] = await Promise.all([extraApi.criteria(), extraApi.results()]);
+    setData((d) => ({ ...d, extraCriteria, extraResults }));
+  }, []);
   const refreshConfig = useCallback(async () => {
     const config = await configApi.get();
     setData((d) => ({ ...d, config }));
@@ -109,7 +121,8 @@ export function DataProvider({ children }) {
         ...data, loading, loadError, reload,
         refreshAttendance, refreshTasks, refreshScores, refreshProjects,
         refreshStudents, refreshRewards, refreshLanguagePortfolio,
-        refreshAnnouncements, refreshSurveys, refreshConfig
+        refreshAnnouncements, refreshSurveys, refreshConfig,
+        refreshPeriodWeights, refreshExtras
       }}
     >
       {children}
