@@ -23,10 +23,13 @@ export function DataProvider({ children }) {
   const userId = session?.user?.id || null;
   const [data, setData] = useState(EMPTY);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
 
   const reload = useCallback(async () => {
     if (!userId) { setData(EMPTY); setLoading(false); return; }
     setLoading(true);
+    setLoadError(null);
+    try {
     const [
       config, students, rewards, purchases, transactions,
       attendance, tasks, taskResults, scores, projects, criteria, projectResults,
@@ -45,6 +48,9 @@ export function DataProvider({ children }) {
       projectTeams, projectTeamMembers, projectTeamResults,
       announcements, surveys, surveyVotes, languagePortfolio
     });
+    } catch (e) {
+      setLoadError(e && e.message ? e.message : String(e));
+    }
     setLoading(false);
   }, [userId]);
 
@@ -100,7 +106,7 @@ export function DataProvider({ children }) {
   return (
     <DataContext.Provider
       value={{
-        ...data, loading, reload,
+        ...data, loading, loadError, reload,
         refreshAttendance, refreshTasks, refreshScores, refreshProjects,
         refreshStudents, refreshRewards, refreshLanguagePortfolio,
         refreshAnnouncements, refreshSurveys, refreshConfig
