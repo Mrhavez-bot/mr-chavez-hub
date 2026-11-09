@@ -3,6 +3,10 @@
 // anything a student account attempts — the UI hides the controls too,
 // but the database is the real enforcement point.
 import { supabase } from "./supabaseClient";
+import { fetchAll } from "./fetchAll";
+
+// Reads a whole table in pages of 1,000 rows (Supabase's per-request cap).
+const all = (table, orders) => fetchAll(supabase, table, orders);
 
 async function unwrap(promise) {
   const { data, error } = await promise;
@@ -114,16 +118,16 @@ export const rewardsApi = {
   // Student redeeming for themselves — goes through a security-definer RPC
   // so a student can never write coins/purchases directly (see schema.sql).
   redeemAsStudent: (rewardId) => unwrap(supabase.rpc("redeem_reward", { p_reward_id: rewardId })),
-  purchases: () => unwrap(supabase.from("reward_purchases").select("*").order("purchased_at", { ascending: false }))
+  purchases: () => all("reward_purchases", [["purchased_at", false], ["id", true]])
 };
 
 export const transactionsApi = {
-  list: () => unwrap(supabase.from("transactions").select("*").order("created_at", { ascending: false }))
+  list: () => all("transactions", [["created_at", false], ["id", true]])
 };
 
 /* ---------- Attendance ---------- */
 export const attendanceApi = {
-  list: () => unwrap(supabase.from("attendance").select("*")),
+  list: () => all("attendance"),
   upsert: (student_id, group_name, period, date, status) =>
     unwrap(
       supabase
@@ -146,11 +150,11 @@ export const attendanceApi = {
 
 /* ---------- Tasks ---------- */
 export const tasksApi = {
-  list: () => unwrap(supabase.from("tasks").select("*")),
+  list: () => all("tasks"),
   create: (title, group_name, period) =>
     unwrap(supabase.from("tasks").insert({ title, group_name, period }).select().single()),
   remove: (id) => unwrap(supabase.from("tasks").delete().eq("id", id)),
-  results: () => unwrap(supabase.from("task_results").select("*")),
+  results: () => all("task_results"),
   setResult: (task_id, student_id, status) =>
     status
       ? unwrap(
@@ -181,7 +185,7 @@ export const tasksApi = {
 
 /* ---------- Scores ---------- */
 export const scoresApi = {
-  list: () => unwrap(supabase.from("scores").select("*")),
+  list: () => all("scores"),
   setScore: (student_id, group_name, period, skill, value) =>
     value === null || value === ""
       ? unwrap(supabase.from("scores").delete().eq("student_id", student_id).eq("period", period).eq("skill", skill))
@@ -230,7 +234,7 @@ export const projectsApi = {
   updateCriterion: (id, fields) => unwrap(supabase.from("project_criteria").update(fields).eq("id", id).select().single()),
   removeCriterion: (id) => unwrap(supabase.from("project_criteria").delete().eq("id", id)),
 
-  results: () => unwrap(supabase.from("project_results").select("*")),
+  results: () => all("project_results"),
   // Bulk save: rows = [{project_id, student_id, criterion_id, value}] (only touched cells).
   bulkSetResults: async (rows) => {
     const toUpsert = rows.filter((r) => r.value !== null && r.value !== "").map((r) => ({ ...r, value: clamp0(r.value) }));
@@ -243,8 +247,8 @@ export const projectsApi = {
 
   // ---- teams
   teams: () => unwrap(supabase.from("project_teams").select("*").order("created_at")),
-  teamMembers: () => unwrap(supabase.from("project_team_members").select("*")),
-  teamResults: () => unwrap(supabase.from("project_team_results").select("*")),
+  teamMembers: () => all("project_team_members"),
+  teamResults: () => all("project_team_results"),
   createTeams: (project_id, names) => unwrap(supabase.from("project_teams").insert(names.map((name) => ({ project_id, name }))).select()),
   renameTeam: (id, name) => unwrap(supabase.from("project_teams").update({ name }).eq("id", id)),
   removeTeam: (id) => unwrap(supabase.from("project_teams").delete().eq("id", id)),
@@ -278,14 +282,14 @@ export const surveysApi = {
     unwrap(supabase.from("surveys").insert({ question, options, groups, active: true }).select().single()),
   update: (id, fields) => unwrap(supabase.from("surveys").update(fields).eq("id", id).select().single()),
   remove: (id) => unwrap(supabase.from("surveys").delete().eq("id", id)),
-  votes: () => unwrap(supabase.from("survey_votes").select("*")),
+  votes: () => all("survey_votes"),
   // Student voting goes through this RPC — see schema for the server-side checks.
   castVote: (surveyId, optionIndex) => unwrap(supabase.rpc("cast_vote", { p_survey_id: surveyId, p_option_index: optionIndex }))
 };
 
 /* ---------- Language Portfolio ---------- */
 export const languagePortfolioApi = {
-  list: () => unwrap(supabase.from("language_portfolio").select("*")),
+  list: () => all("language_portfolio"),
   setValue: (student_id, group_name, period, value) =>
     value === null || value === ""
       ? unwrap(supabase.from("language_portfolio").delete().eq("student_id", student_id).eq("period", period))
