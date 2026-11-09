@@ -125,6 +125,41 @@ export function gradeWeights(config, hasProject) {
   return DEFAULT_WEIGHTS_NO_PROJECT;
 }
 
+// Percent (0-100) of an extra criterion for one student. The teacher enters
+// points out of the criterion's max_points (default 100).
+export function extraPct(extraResults, criterion, studentId) {
+  const r = (extraResults || []).find((x) => x.criterion_id === criterion.id && x.student_id === studentId);
+  if (!r) return null;
+  return round1((Number(r.value) / Number(criterion.max_points ?? 100)) * 100);
+}
+
+// The general weights from Settings, as whole percentages (used to prefill the
+// per-period editor).
+export function generalWeightSets(config) {
+  const pct = (w) => ({ att: Math.round(w.att * 100), tsk: Math.round(w.tsk * 100), scr: Math.round(w.scr * 100), lp: Math.round(w.lp * 100), proj: Math.round(w.proj * 100) });
+  return { no_project: pct(gradeWeights(config, false)), with_project: pct(gradeWeights(config, true)) };
+}
+
+// Which weights apply to a group in a period. A period with its own weights
+// (data.periodWeights) overrides the general ones from Settings. Extra criteria
+// that belong to another group are left out and their weight is shared out
+// proportionally, so the rest still adds up to 100%.
+export function resolveWeights(data, group, period, hasProject) {
+  const row = (data.periodWeights || []).find((r) => r.period === period);
+  const set = row ? (hasProject ? row.with_project : row.no_project) : null;
+  if (!set || !Object.keys(set).length) {
+    return { ...gradeWeights(data.config, hasProject), extras: {}, extraList: [], custom: false };
+  }
+  const f = (k) => Number(set[k] ?? 0) / 100;
+  const inPeriod = (data.extraCriteria || []).filter((c) => c.period === period);
+  const extraList = inPeriod.filter((c) => c.group_name == null || c.group_name === group);
+  const hiddenSum = inPeriod.filter((c) => c.group_name != null && c.group_name !== group).reduce((a, c) => a + f("x_" + c.id), 0);
+  const k = hiddenSum > 0 && hiddenSum < 1 ? 1 / (1 - hiddenSum) : 1;
+  const w = { att: f("att") * k, tsk: f("tsk") * k, scr: f("scr") * k, lp: f("lp") * k, proj: hasProject ? f("proj") * k : 0, extras: {}, extraList, custom: true };
+  extraList.forEach((c) => { w.extras[c.id] = f("x_" + c.id) * k; });
+  return w;
+}
+
 // Language Portfolio: one directly-entered percentage per student/period —
 // simpler than Scores (no sub-skills) or Project (no rubric criteria).
 export function languagePortfolioPct(languagePortfolio, studentId, group, period) {
@@ -146,7 +181,8 @@ export function computeGrade(data, studentId, group, period) {
   const lp = languagePortfolioPct(languagePortfolio, studentId, group, period);
   const proj = projectPct(projects, criteria, projectResults, studentId, group, period, { teamMembers: projectTeamMembers, teamResults: projectTeamResults });
   const hasProject = proj.exists;
-  const weights = gradeWeights(config, hasProject);
+  const weights = resolveWeights(data, group, period, hasProject);
+  const extras = weights.extraList.map((c) => ({ id: c.id, name: c.name, value: extraPct(data.extraResults, c, studentId), weight: weights.extras[c.id] || 0 }));
   const components = [
     ["att", att, weights.att],
     ["tsk", tsk, weights.tsk],
@@ -154,6 +190,7 @@ export function computeGrade(data, studentId, group, period) {
     ["lp", lp, weights.lp]
   ];
   if (hasProject) components.push(["proj", proj.value, weights.proj]);
+  extras.forEach((x) => components.push([x.name, x.value, x.weight]));
   const parts = components.filter((c) => c[2] > 0);
   const missing = parts.filter((p) => p[1] == null).map((p) => p[0]);
   let final = null;
@@ -166,8 +203,19 @@ export function computeGrade(data, studentId, group, period) {
   }
   return {
     attendance: att, tasks: tsk, scores: scr, languagePortfolio: lp, project: proj.value,
-    hasProject, weights, final, medal, missing
+    extras, hasProject, weights, final, medal, missing
   };
+}
+
+// "Attendance 20% · Tasks 20% · Exam 30% · Participation 10% · Project 20%"
+const pctTxt = (n) => Math.round(n * 1000) / 10 + "%";
+export function weightsText(gr) {
+  const w = gr.weights;
+  const parts = [`Attendance ${pctTxt(w.att)}`, `Tasks ${pctTxt(w.tsk)}`, `Exam ${pctTxt(w.scr)}`];
+  if (w.lp > 0) parts.push(`Language Portfolio ${pctTxt(w.lp)}`);
+  (gr.extras || []).filter((x) => x.weight > 0).forEach((x) => parts.push(`${x.name} ${pctTxt(x.weight)}`));
+  if (gr.hasProject) parts.push(`Project ${pctTxt(w.proj)}`);
+  return parts.join(" · ");
 }
 
 export function medalIcon(m) {

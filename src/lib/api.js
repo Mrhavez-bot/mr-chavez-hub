@@ -267,6 +267,32 @@ export const projectsApi = {
   }
 };
 
+/* ---------- Period weights & extra criteria ---------- */
+export const periodWeightsApi = {
+  list: () => unwrap(supabase.from("period_weights").select("*")),
+  save: (period, no_project, with_project) =>
+    unwrap(supabase.from("period_weights").upsert({ period, no_project, with_project, updated_at: new Date().toISOString() }, { onConflict: "period" })),
+  remove: (period) => unwrap(supabase.from("period_weights").delete().eq("period", period))
+};
+
+export const extraApi = {
+  criteria: () => unwrap(supabase.from("extra_criteria").select("*").order("created_at")),
+  createCriterion: (period, name, max_points, group_name) =>
+    unwrap(supabase.from("extra_criteria").insert({ period, name, max_points, group_name: group_name || null }).select().single()),
+  updateCriterion: (id, fields) => unwrap(supabase.from("extra_criteria").update(fields).eq("id", id)),
+  removeCriterion: (id) => unwrap(supabase.from("extra_criteria").delete().eq("id", id)),
+  results: () => all("extra_results"),
+  // rows = [{criterion_id, student_id, value}] (only touched cells; value null clears)
+  bulkSetResults: async (rows) => {
+    const toUpsert = rows.filter((r) => r.value !== null && r.value !== "").map((r) => ({ ...r, value: Math.max(0, Number(r.value)) }));
+    const toDelete = rows.filter((r) => r.value === null || r.value === "");
+    const calls = [];
+    if (toUpsert.length) calls.push(unwrap(supabase.from("extra_results").upsert(toUpsert, { onConflict: "criterion_id,student_id" })));
+    if (toDelete.length) calls.push(unwrap(supabase.from("extra_results").delete().or(orEqFilter(toDelete, ["criterion_id", "student_id"]))));
+    await Promise.all(calls);
+  }
+};
+
 /* ---------- Announcements ---------- */
 export const announcementsApi = {
   list: () => unwrap(supabase.from("announcements").select("*").order("created_at", { ascending: false })),

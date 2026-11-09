@@ -34,7 +34,7 @@ export async function importStudentsExcel(file, existingStudents) {
 }
 
 export function exportReportExcel(data) {
-  const { students, attendance, tasks, taskResults, scores, projects, criteria, projectResults, projectTeams, projectTeamMembers, projectTeamResults, languagePortfolio, transactions, purchases } = data;
+  const { students, attendance, tasks, taskResults, scores, projects, criteria, projectResults, projectTeams, projectTeamMembers, projectTeamResults, extraCriteria, extraResults, languagePortfolio, transactions, purchases } = data;
   const wb = XLSX.utils.book_new();
   const byId = (id) => students.find((s) => s.id === id);
 
@@ -89,6 +89,7 @@ export function exportReportExcel(data) {
         Student: s.name, Group: s.group_name, Period: p,
         Attendance: g.attendance, Tasks: g.tasks, Exam: g.scores,
         "Language Portfolio": g.weights.lp > 0 ? g.languagePortfolio : "N/A",
+        ...Object.fromEntries(g.extras.filter((x) => x.weight > 0).map((x) => [x.name, x.value])),
         Project: g.hasProject ? g.project : "N/A",
         "Final Grade": g.final == null ? "Incomplete" : g.final,
         Medal: g.final == null ? "" : medalLabel(g.medal)
@@ -96,6 +97,14 @@ export function exportReportExcel(data) {
     });
   });
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(gradeRows), "Grades");
+
+  const extraRows = [];
+  (extraResults || []).forEach((r) => {
+    const c = (extraCriteria || []).find((x) => x.id === r.criterion_id);
+    const s = byId(r.student_id);
+    if (c && s) extraRows.push({ Student: s.name, Group: s.group_name, Period: c.period, Criterion: c.name, Value: r.value, "Max points": c.max_points });
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(extraRows), "Extra criteria");
 
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
     transactions.map((t) => ({ Student: byId(t.student_id)?.name || t.student_id, Group: t.group_name, Amount: t.amount, Type: t.type, Reason: t.reason, Date: t.created_at?.slice(0, 10) }))
