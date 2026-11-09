@@ -38,11 +38,20 @@ const TEACHER_TABS = [
 
 function Shell() {
   const { profile, signOut } = useAuth();
-  const { config, loading } = useData();
+  const { config, loading, loadError, reload } = useData();
   const [tab, setTab] = useState("dashboard");
   const [ui, setUi] = useState({ group: "10A", period: "Period 1", selectedGroup: null, search: "" });
 
   if (loading) return <div className="app"><div className="spin">Loading your data…</div></div>;
+  if (loadError) return (
+    <div className="app">
+      <div className="empty">
+        <h3>No se pudieron cargar los datos</h3>
+        {loadError}
+        <div style={{ marginTop: 12 }}><button className="primary" onClick={reload}>Reintentar</button></div>
+      </div>
+    </div>
+  );
 
   const appName = config?.app_name || "Mr. Chavez's Hub";
   const headerMessage = config?.header_message || "Coins, attendance, tasks, scores & grades — one roster";
