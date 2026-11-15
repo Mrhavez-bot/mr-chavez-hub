@@ -2,6 +2,7 @@ import * as XLSX from "xlsx";
 import { GROUPS, TASK_PCT } from "./constants";
 import { PERIODS } from "./constants";
 import { computeGrade, medalLabel } from "./calc";
+import { buildGroupResults } from "./groupResults";
 
 export function exportStudentsExcel(students) {
   const rows = students.map((s) => ({ "Student ID": s.id, "Student Name": s.name, Group: s.group_name, "Celtix Balance": s.coins }));
@@ -115,4 +116,39 @@ export function exportReportExcel(data) {
   ), "Rewards");
 
   XLSX.writeFile(wb, "MrChavezHub_Report.xlsx");
+}
+
+// Group Results report -> one workbook with Project, Exam and Tasks sheets.
+export function exportGroupResultsExcel(data, group, period) {
+  const r = buildGroupResults(data, group, period);
+  const wb = XLSX.utils.book_new();
+  const add = (rows, name) => XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows.length ? rows : [{ Info: "Sin datos" }]), name);
+
+  if (r.project.exists) {
+    const p = r.project;
+    const isTeam = p.mode === "team";
+    const rows = p.rows.map((row) => ({
+      [isTeam ? "Team" : "Student"]: row.label,
+      ...(isTeam ? { Members: row.members } : {}),
+      ...Object.fromEntries(p.criteria.map((c) => [`${c.name} (/${c.max})`, row.values[c.id] ?? ""])),
+      "Final Score %": row.final == null ? "Missing" : row.final
+    }));
+    rows.push({
+      [isTeam ? "Team" : "Student"]: isTeam ? "Team average" : "Group average",
+      ...(isTeam ? { Members: "" } : {}),
+      ...Object.fromEntries(p.criteria.map((c, i) => [`${c.name} (/${c.max})`, p.avgByCriterion[i] ?? ""])),
+      "Final Score %": p.avgFinal ?? ""
+    });
+    add(rows, "Project");
+  } else add([{ Info: `No hay proyecto para ${group} · ${period}` }], "Project");
+
+  const exam = r.exam.rows.map((row) => ({ Student: row.label, ...Object.fromEntries(r.exam.skills.map((sk) => [sk, row.values[sk] ?? ""])), "Exam %": row.avg ?? "" }));
+  exam.push({ Student: "Group average", ...Object.fromEntries(r.exam.skills.map((sk, i) => [sk, r.exam.avgBySkill[i] ?? ""])), "Exam %": r.exam.avg ?? "" });
+  add(exam, "Exam");
+
+  const tasks = r.tasks.rows.map((row) => ({ Student: row.label, ...Object.fromEntries(r.tasks.list.map((t) => [t.title, row.statuses[t.id] || ""])), "Completion %": row.pct ?? "" }));
+  if (r.tasks.list.length) tasks.push({ Student: "Group average", ...Object.fromEntries(r.tasks.summary.map((s) => [s.title, s.avgPct ?? ""])), "Completion %": r.tasks.avgPct ?? "" });
+  add(tasks, "Tasks");
+
+  XLSX.writeFile(wb, `MrChavezHub_Results_${group}_${period.replace(/\s+/g, "")}.xlsx`);
 }
