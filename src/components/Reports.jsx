@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useData } from "../context/DataContext";
 import { GROUPS, PERIODS, SKILLS } from "../lib/constants";
 import { attendanceStats, taskPct, scoresDetail, scoresPct, projectPct, computeGrade, fmtPct, medalIcon } from "../lib/calc";
-import { exportReportExcel } from "../lib/excel";
+import { exportReportExcel, exportGroupResultsExcel } from "../lib/excel";
+import GroupResultsReport from "./GroupResultsReport";
 import BarChart from "./BarChart";
 
 function avg(arr) {
@@ -159,11 +160,12 @@ export default function Reports() {
       <h2>Reports</h2>
       <div className="tabs2">
         <button className={type === "group" ? "active" : ""} onClick={() => setType("group")}>By Group</button>
+        <button className={type === "results" ? "active" : ""} onClick={() => setType("results")}>Group Results</button>
         <button className={type === "student" ? "active" : ""} onClick={() => setType("student")}>By Student</button>
         <button className={type === "period" ? "active" : ""} onClick={() => setType("period")}>All Groups (by Period)</button>
       </div>
       <div className="row">
-        {type === "group" && (
+        {(type === "group" || type === "results") && (
           <select value={group} onChange={(e) => setGroup(e.target.value)}>{GROUPS.map((g) => <option key={g} value={g}>{g}</option>)}</select>
         )}
         {type === "student" && (
@@ -185,11 +187,12 @@ export default function Reports() {
         )}
         <select value={period} onChange={(e) => setPeriod(e.target.value)}>{PERIODS.map((p) => <option key={p} value={p}>{p}</option>)}</select>
         <button className="teal" onClick={() => window.print()}>🖨 Download PDF</button>
-        <button className="teal" onClick={() => exportReportExcel(data)}>⬇ Export to Excel</button>
+        <button className="teal" onClick={() => (type === "results" ? exportGroupResultsExcel(data, group, period) : exportReportExcel(data))}>{type === "results" ? "⬇ Export results to Excel" : "⬇ Export to Excel"}</button>
       </div>
       <div>
         <div className="muted">{appName} · {period} · Generated {today}</div>
         {type === "group" && <GroupReport />}
+        {type === "results" && <GroupResultsReport data={data} group={group} period={period} />}
         {type === "student" && <StudentReport />}
         {type === "period" && <PeriodSummaryReport />}
       </div>
